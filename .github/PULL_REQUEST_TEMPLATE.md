@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed and why, in two or three sentences. -->
+<!-- What changed and why, in two or three sentences. Start with "Closes #N" when this resolves an issue. -->
 
 ## Changes
 

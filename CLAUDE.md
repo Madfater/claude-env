@@ -27,7 +27,7 @@ python3 script/check_conventions.py --staged   # rules 1, 2, 4, 5 on staged chan
 python3 script/github.py --help                # GitHub API client, credentials in .env.skills
 ```
 
-Ship changes with `/ship`. Clean up after a merge with `/land`.
+Ship changes with `/ship`. Work a GitHub issue with `/issue <number>`. Clean up after a merge with `/land`.
 
 ## Docs routing
 

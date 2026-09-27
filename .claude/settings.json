@@ -22,7 +22,9 @@
       "Bash(python3 script/github.py default-branch:*)",
       "Bash(python3 script/github.py pr-view:*)",
       "Bash(python3 script/github.py pr-checks:*)",
-      "Bash(python3 script/github.py pr-merged:*)"
+      "Bash(python3 script/github.py pr-merged:*)",
+      "Bash(python3 script/github.py issue-list:*)",
+      "Bash(python3 script/github.py issue-view:*)"
     ],
     "deny": [
       "Read(**/.env.skills)",
