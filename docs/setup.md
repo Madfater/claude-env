@@ -44,7 +44,7 @@ The skill files under `.claude/skills/playwright-cli/` are vendored from the `@p
 
 | Owner | Files | On apply |
 | --- | --- | --- |
-| Template | `.claude/skills/ship/SKILL.md`, `.claude/skills/land/SKILL.md`, `.claude/skills/playwright-cli/` (whole directory), `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
+| Template | `.claude/skills/ship/SKILL.md`, `.claude/skills/land/SKILL.md`, `.claude/skills/issue/SKILL.md`, `.claude/skills/playwright-cli/` (whole directory), `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
 | Project | `CLAUDE.md`, `.claude/settings.json`, `.github/workflows/harness.yml`, `.playwright/cli.config.json`, `docs/README.md`, `docs/architecture.md`, `script/check.py` | Created if missing, otherwise `<file>.template` is written beside it |
 | Shared | `.gitignore` | Missing harness entries are appended |
 | Generated | `.claude/harness-version` | Set to the template commit |
@@ -67,6 +67,7 @@ cp .env.skills.example .env.skills
 | --- | --- | --- |
 | Contents | Read and write | push, sync, branch-delete |
 | Pull requests | Read and write | pr-create, pr-view, pr-edit, pr-merged |
+| Issues | Read and write | issue-list, issue-view, issue-comment |
 | Checks | Read | pr-checks |
 | Commit statuses | Read | pr-checks |
 | Administration | Read and write | repo-create, repo-set-template, only when needed |

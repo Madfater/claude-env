@@ -6,6 +6,7 @@ A Claude Code harness template: shared rules, a `/ship` and `/land` workflow, a 
 
 - **CLAUDE.md** holds the repository rules, including the Human in the loop rule, and a routing table into `docs/`.
 - **`/ship`** takes a change from agreed scope through a worktree branch, checked commits, a fresh-context review and CI to an open PR. The human then judges the docs. It never merges.
+- **`/issue`** works a GitHub issue: it triages it, reproduces a bug first, then runs the `/ship` gates to a PR that closes the issue on merge.
 - **`/land`** cleans up after the human merges: it syncs the default branch and removes the worktree and both branches.
 - **`playwright-cli` skill** drives a real browser for web UI and UX checks. `/ship` uses it as evidence for UI changes.
 - **`code-reviewer` agent** is a read-only reviewer that returns a strict PASS or FAIL verdict.
