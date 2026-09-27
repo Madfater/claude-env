@@ -8,7 +8,7 @@
   user's global git config is untouched.
 - Subcommands print JSON or plain text to stdout.
 - Exit codes: 0 success; 1 negative answer (CI failed, PR not merged); 2 CI still pending at
-  timeout; 3 error (missing credentials, API or git failure).
+  timeout; 3 error (missing credentials, API or git failure, unreadable input file).
 
 Usage:
     python3 script/github.py default-branch
@@ -448,14 +448,27 @@ def cmd_repo_set_template(client: Client, args) -> None:
 
 
 def cmd_issue_list(client: Client, args) -> None:
-    """Print matching issues, without bodies, as a JSON list."""
-    query = {"state": args.state, "per_page": str(min(args.limit, 100))}
+    """Print matching issues, without bodies, as a JSON list.
+
+    - Pages through results until `--limit` issues are collected, since PRs share the listing.
+    """
+    if args.limit < 1:
+        raise GitHubError("--limit must be at least 1.")
+    query = {"state": args.state, "per_page": "100"}
     if args.label:
         query["labels"] = args.label
     if args.assignee:
         query["assignee"] = args.assignee
-    items = client.request("GET", "/repos/{repo}/issues?" + urllib.parse.urlencode(query))
-    issues = [issue_record(i) for i in only_issues(items)][: args.limit]
+    issues: list[dict] = []
+    page = 1
+    while len(issues) < args.limit:
+        query["page"] = str(page)
+        items = client.request("GET", "/repos/{repo}/issues?" + urllib.parse.urlencode(query))
+        issues.extend(issue_record(i) for i in only_issues(items))
+        if len(items) < 100:
+            break
+        page += 1
+    issues = issues[: args.limit]
     for issue in issues:
         issue.pop("body")
     print(json.dumps(issues, indent=2))
@@ -560,7 +573,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         client = Client(load_env())
         args.func(client, args)
-    except GitHubError as exc:
+    except (GitHubError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 3
     return 0

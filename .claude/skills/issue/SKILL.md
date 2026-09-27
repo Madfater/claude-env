@@ -1,6 +1,6 @@
 ---
 name: issue
-description: "Work a GitHub issue: read and triage it, reproduce a bug before fixing it, agree the scope, then carry it through the /ship gates to a PR that closes the issue on merge. Stops before anything leaves the machine."
+description: "Work a GitHub issue: read and triage it, agree the scope, reproduce a bug in the worktree before fixing it, and carry it through the /ship gates to a PR that closes the issue on merge. Stops before anything leaves the machine."
 argument-hint: "Issue number, or blank to pick from open issues"
 disable-model-invocation: true
 ---
@@ -56,39 +56,32 @@ Then stop until the reporter or the human answers.
 
 **Check:** type, location and gaps are written down, and no gap blocks the work.
 
-## Step 4 - Reproduce (bugs only)
-
-Prove the bug before changing any code. Use the cheapest faithful reproduction:
-- a failing automated test at the right level, when the project has a test suite;
-- for web UI bugs, the `playwright-cli` skill against the local dev server, with a snapshot or screenshot of the broken state;
-- otherwise a command whose output shows the wrong behavior.
-
-Keep the reproduction and its failing output. It becomes the first acceptance criterion: it fails before the fix and passes after. If the bug does not reproduce, stop. Report what you tried, and let the human decide whether to ask the reporter.
-
-For features, skip this step.
-
-**Check:** for a bug, the reproduction fails for the reason the issue describes.
-
-## Step 5 - Prepare the scope
+## Step 4 - Prepare the scope
 
 Build the input for `/ship` gate 1:
 - **Task:** one or two sentences, ending with `(#<N>)`.
 - **Branch:** `<type>/<N>-<kebab-summary>`, for example `fix/42-keep-name-after-save`.
+- **Reproduction plan (bugs only):** how the bug will be shown before any fix. Use the cheapest faithful option:
+  - a failing automated test at the right level, when the project has a test suite;
+  - for a web UI bug, the `playwright-cli` skill against the local dev server, with a snapshot or screenshot of the broken state;
+  - otherwise a command whose output shows the wrong behavior.
 - **Acceptance criteria:**
-  - For a bug, the reproduction from step 4 as a `runnable` criterion.
+  - For a bug, the reproduction as the first `runnable` criterion. It fails before the fix and passes after.
   - Each behavior the issue and its comments ask for.
   - A regression test when the project has a test suite.
   - Tag each criterion `runnable` or `judgment`.
 - **Out of scope:** anything the issue mentions that this PR will not do, so the human can agree to leave it open.
 
+Do not write any code or test yet. Everything is written in the worktree that `/ship` gate 2 creates, so the main checkout stays clean.
+
 **Check:** every requirement in the issue maps to a criterion or to the out-of-scope list.
 
-## Step 6 - Ship
+## Step 5 - Ship
 
-Read `.claude/skills/ship/SKILL.md` and follow it from gate 1, presenting the scope from step 5. Everything there applies unchanged, with these additions:
-- **Gate 3.** For a bug, commit the reproduction test in the same commit as the fix, since every commit must pass `script/check.py`. The failing output from step 4 is the before evidence.
-- **Gate 4.** Re-run the reproduction and keep its passing output next to the failing output from step 4.
+Read `.claude/skills/ship/SKILL.md`. When resuming, run its gate 0 first to find where the work stands. Otherwise start at gate 1 and present the scope from step 4. Everything there applies unchanged, with these additions:
+- **Gate 3, first (bugs only).** Before changing any code, build the reproduction in the worktree and run it. Keep its failing output as the before evidence. If it does not fail for the reason the issue describes, stop. Report what you tried, and let the human decide whether to ask the reporter. Commit the reproduction test in the same commit as the fix, since every commit must pass `script/check.py`.
+- **Gate 4.** Re-run the reproduction and keep its passing output next to the failing output.
 - **Gate 6.** The Summary section of the PR body starts with `Closes #<N>`, so GitHub closes the issue when the PR merges into the default branch. List the out-of-scope items under Summary as well.
 - **Gate 9.** Offer to comment on the issue with the PR link. Post it only on the human's yes.
 
-**Check:** the PR is open, its body starts with `Closes #<N>`, and the `/ship` hand-off is sent.
+**Check:** the PR is open, its Summary section starts with `Closes #<N>`, and the `/ship` hand-off is sent.
