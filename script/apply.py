@@ -1,6 +1,7 @@
 """Install or update the harness in another repository from this local clone.
 
 - Template-owned files are overwritten in the target, so re-running pulls in template updates.
+- A template-owned entry ending in `/` is a directory: every file under it is template-owned.
 - Project-owned files are created only when missing. When the target already has a different
   version, the template version is written next to it as `<file>.template` for a human to merge.
 - `.gitignore` gets any missing harness entries appended; existing lines are kept.
@@ -28,6 +29,7 @@ TEMPLATE_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_OWNED = [
     ".claude/skills/ship/SKILL.md",
     ".claude/skills/land/SKILL.md",
+    ".claude/skills/playwright-cli/",
     ".claude/agents/code-reviewer.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".env.skills.example",
@@ -43,6 +45,7 @@ PROJECT_OWNED = [
     "CLAUDE.md",
     ".claude/settings.json",
     ".github/workflows/harness.yml",
+    ".playwright/cli.config.json",
     "docs/README.md",
     "docs/architecture.md",
     "script/check.py",
@@ -53,6 +56,7 @@ GITIGNORE_LINES = [
     ".claude/worktrees/",
     ".claude/settings.local.json",
     "__pycache__/",
+    ".playwright-cli/",
 ]
 
 VERSION_FILE = ".claude/harness-version"
@@ -85,10 +89,28 @@ def read_bytes(path: Path) -> bytes | None:
     return path.read_bytes() if path.is_file() else None
 
 
+def expand(entries: list[str]) -> list[str]:
+    """Replace each directory entry (trailing `/`) with the sorted files under it in the template."""
+    files: list[str] = []
+    for entry in entries:
+        if not entry.endswith("/"):
+            files.append(entry)
+            continue
+        root = TEMPLATE_ROOT / entry
+        if not root.is_dir():
+            raise SystemExit(f"template directory missing: {entry}")
+        files.extend(
+            path.relative_to(TEMPLATE_ROOT).as_posix()
+            for path in sorted(root.rglob("*"))
+            if path.is_file() and "__pycache__" not in path.parts
+        )
+    return files
+
+
 def plan(target: Path) -> list[Action]:
     """Compare the template with the target and list the changes to make."""
     actions: list[Action] = []
-    for rel in TEMPLATE_OWNED:
+    for rel in expand(TEMPLATE_OWNED):
         src = read_bytes(TEMPLATE_ROOT / rel)
         if src is None:
             raise SystemExit(f"template file missing: {rel}")

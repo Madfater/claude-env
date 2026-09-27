@@ -143,7 +143,7 @@ class ApplyPlanTest(unittest.TestCase):
 
     def test_fresh_target_creates_everything(self):
         kinds = self.kinds(apply.plan(self.target))
-        for rel in apply.TEMPLATE_OWNED + apply.PROJECT_OWNED + [".gitignore", apply.VERSION_FILE]:
+        for rel in apply.expand(apply.TEMPLATE_OWNED) + apply.PROJECT_OWNED + [".gitignore", apply.VERSION_FILE]:
             self.assertIn(kinds[rel], {"create", "append"}, rel)
 
     def test_second_run_is_idempotent(self):
@@ -157,6 +157,12 @@ class ApplyPlanTest(unittest.TestCase):
         self.assertEqual((self.target / "CLAUDE.md").read_text(encoding="utf-8"), "custom\n")
         self.assertTrue((self.target / "CLAUDE.md.template").is_file())
         self.assertEqual(self.kinds(apply.plan(self.target))["CLAUDE.md"], "skip")
+
+    def test_directory_entry_expands_to_its_files(self):
+        files = apply.expand([".claude/skills/playwright-cli/"])
+        self.assertIn(".claude/skills/playwright-cli/SKILL.md", files)
+        self.assertTrue(any(f.startswith(".claude/skills/playwright-cli/references/") for f in files))
+        self.assertTrue(all(not f.endswith("/") for f in files))
 
     def test_customised_template_file_is_overwritten(self):
         path = self.target / "script/github.py"
