@@ -85,7 +85,7 @@ Run the command of every `runnable` criterion. Keep the command and the last lin
 
 For a web UI change, also drive the page with the `playwright-cli` skill against the local dev server:
 - Take a `snapshot` of each listed page and state.
-- Take a `screenshot` of each, with `resize` for mobile width, saved under `.playwright-cli/evidence/`.
+- Take a `screenshot` of each, with `resize` for mobile width, saved with `--filename=.playwright-cli/evidence/<page>-<state>-<width>.png`.
 - Walk the changed user flow once: click, fill, submit.
 - Check `console` for errors.
 

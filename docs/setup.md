@@ -49,6 +49,8 @@ The skill files under `.claude/skills/playwright-cli/` are vendored from the `@p
 | Shared | `.gitignore` | Missing harness entries are appended |
 | Generated | `.claude/harness-version` | Set to the template commit |
 
+For a directory entry, every tracked file under it is copied. A file deleted from the template stays in targets until removed by hand.
+
 Change template-owned files in `claude-env` only. Local edits to them in a target repository are lost on the next apply.
 
 ## Credentials

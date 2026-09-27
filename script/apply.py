@@ -90,7 +90,11 @@ def read_bytes(path: Path) -> bytes | None:
 
 
 def expand(entries: list[str]) -> list[str]:
-    """Replace each directory entry (trailing `/`) with the sorted files under it in the template."""
+    """Replace each directory entry (trailing `/`) with the sorted files under it in the template.
+
+    - Uses `git ls-files` so untracked and ignored files in the template are never copied.
+    - Falls back to walking the directory when the template is not a git checkout.
+    """
     files: list[str] = []
     for entry in entries:
         if not entry.endswith("/"):
@@ -99,11 +103,19 @@ def expand(entries: list[str]) -> list[str]:
         root = TEMPLATE_ROOT / entry
         if not root.is_dir():
             raise SystemExit(f"template directory missing: {entry}")
-        files.extend(
-            path.relative_to(TEMPLATE_ROOT).as_posix()
-            for path in sorted(root.rglob("*"))
-            if path.is_file() and "__pycache__" not in path.parts
+        proc = subprocess.run(
+            ["git", "-C", str(TEMPLATE_ROOT), "ls-files", "--", entry],
+            capture_output=True, text=True, check=False,
         )
+        tracked = sorted(line for line in proc.stdout.splitlines() if line)
+        if proc.returncode == 0 and tracked:
+            files.extend(tracked)
+        else:
+            files.extend(
+                path.relative_to(TEMPLATE_ROOT).as_posix()
+                for path in sorted(root.rglob("*"))
+                if path.is_file() and "__pycache__" not in path.parts
+            )
     return files
 
 

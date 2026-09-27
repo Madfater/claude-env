@@ -40,6 +40,7 @@ The `playwright-cli` skill drives a real browser from the shell for UI and UX ch
 - Snapshots give element refs such as `e15` for later commands. Screenshots and traces are for humans and the reviewer.
 - Session output goes to `.playwright-cli/`, which is gitignored.
 - Local dev servers and test environments may be driven freely. On any other site, logging in or submitting data needs an explicit yes, under the Human in the loop rule.
+- While the skill is active, its upstream frontmatter lets any `npm` and `npx` command run without a permission prompt. Treat `npm publish`, global installs and unfamiliar `npx` packages as needing an explicit yes anyway.
 - The skill's own docs show `gh pr create --attach` for putting screenshots on a PR. That needs the `gh` CLI, which the harness does not require. Without it, list the screenshot paths in the PR's Verification section, and let the human attach any on GitHub.
 
 ## Branches
