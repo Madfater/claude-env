@@ -29,9 +29,10 @@ Pull the `claude-env` clone and run the apply script again. `.claude/harness-ver
 
 | Owner | Files | On apply |
 | --- | --- | --- |
-| Template | `.claude/skills/ship`, `.claude/skills/land`, `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
+| Template | `.claude/skills/ship/SKILL.md`, `.claude/skills/land/SKILL.md`, `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
 | Project | `CLAUDE.md`, `.claude/settings.json`, `.github/workflows/harness.yml`, `docs/README.md`, `docs/architecture.md`, `script/check.py` | Created if missing, otherwise `<file>.template` is written beside it |
 | Shared | `.gitignore` | Missing harness entries are appended |
+| Generated | `.claude/harness-version` | Set to the template commit |
 
 Change template-owned files in `claude-env` only. Local edits to them in a target repository are lost on the next apply.
 
@@ -52,6 +53,8 @@ cp .env.skills.example .env.skills
 | Checks | Read | pr-checks |
 | Commit statuses | Read | pr-checks |
 | Administration | Read and write | repo-create, repo-set-template, only when needed |
+
+`repo-create` calls the user-level endpoint, so it needs a token with access to all repositories and the Administration permission. Use a separate short-lived token for it rather than widening the everyday one.
 
 `GITHUB_REPO` is optional and defaults to the `origin` remote.
 
