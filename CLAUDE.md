@@ -13,7 +13,7 @@
 ## Human in the loop
 
 - Local work runs without asking: reading, editing, running checks, committing, creating worktrees.
-- Stop for an explicit yes before anything that leaves the machine: push, PR create or edit, API writes.
+- Stop for an explicit yes before anything that leaves the machine: push, PR create or edit, API writes, and logging in or submitting data through a browser on any site that is not local or a test environment.
 - Stop for an explicit yes before anything irreversible: deleting files, branches or worktrees, force operations, history rewrites.
 - Stop for an explicit yes when a check or review still fails after its retry budget.
 - A yes covers only the action it was asked for.

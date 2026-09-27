@@ -43,7 +43,8 @@ Present, then wait for yes:
 - The task in one or two sentences.
 - Branch name `<type>/<kebab-summary>`, type one of `feat`, `fix`, `docs`, `chore`, `refactor`.
 - Acceptance criteria, numbered, each tagged `runnable` (with the exact command that proves it) or `judgment`.
-- Whether the change touches a runnable app or UI, which decides the `/verify` step in gate 4.
+- Whether the change touches a runnable app or a web UI, which decides the `/verify` and browser steps in gate 4.
+- For a web UI change, the pages and states to check, each listed as a `judgment` criterion. Examples are the layout at desktop and mobile widths, empty and error states, and keyboard focus.
 
 Run `python3 script/check.py`. If it prints `UNCONFIGURED`, say so. Ask the human to add the project's commands to `PROJECT_COMMANDS`, or to confirm that the repo has no project checks yet.
 
@@ -82,6 +83,14 @@ Add a body only when the reason is not visible in the diff. Add no trailers.
 
 Run the command of every `runnable` criterion. Keep the command and the last lines of its output as evidence. If gate 1 said the change touches a runnable app or UI, run `/verify` and keep its outcome. Otherwise record `/verify: skipped, no runnable app affected`.
 
+For a web UI change, also drive the page with the `playwright-cli` skill against the local dev server:
+- Take a `snapshot` of each listed page and state.
+- Take a `screenshot` of each, with `resize` for mobile width, saved under `.playwright-cli/evidence/`.
+- Walk the changed user flow once: click, fill, submit.
+- Check `console` for errors.
+
+Keep the screenshot paths, the flow result and any console errors as evidence. Only local and test environments may be driven freely. On any other site, stop and ask before logging in or submitting data.
+
 A failing criterion sends you back to gate 3.
 
 **Check:** every runnable criterion has passing evidence.
@@ -92,7 +101,7 @@ Dispatch the `code-reviewer` agent with:
 - the base ref `origin/<default>` and the branch name;
 - the task;
 - the criteria with their tags;
-- the evidence from gate 4.
+- the evidence from gate 4, including screenshot paths for UI criteria, since the reviewer can read images.
 
 Do not add your own opinion of the code.
 
@@ -110,7 +119,7 @@ Draft the PR in a scratch file, filling every section of `.github/PULL_REQUEST_T
 - **Summary** covers what changed and why.
 - **Changes** lists the commits as bullets.
 - **Review** gives the verdict, each finding and how it was resolved.
-- **Verification** lists each criterion with its command and result, plus the `/verify` outcome.
+- **Verification** lists each criterion with its command and result, plus the `/verify` outcome and the browser check results. Screenshots stay local unless the human attaches them on GitHub.
 - **Docs** says `Pending human review` at this point.
 - **Merge checklist** is left unticked.
 
