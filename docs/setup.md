@@ -25,12 +25,27 @@ Then do steps 2 to 5 above for any file that was created, and merge each `<file>
 
 Pull the `claude-env` clone and run the apply script again. `.claude/harness-version` in the target records the template commit it was last synced from.
 
+## Browser tooling
+
+The `playwright-cli` skill needs Node.js and the CLI:
+
+```bash
+npm install -g @playwright/cli@latest
+playwright-cli install-browser
+```
+
+`.playwright/cli.config.json` makes the CLI use the bundled Chromium that `install-browser` downloads. Without it, the CLI looks for Google Chrome at its system path and fails to start where Chrome is missing. Edit the config per repository to choose another browser.
+
+The CLI blocks `file:` URLs. Serve pages over HTTP, for example with the project's dev server.
+
+The skill files under `.claude/skills/playwright-cli/` are vendored from the `@playwright/cli` npm package. The copy comes from `node_modules/@playwright/cli/skills/playwright-cli/`, with one change: a checkmark in `references/video-recording.md` is replaced by `[ok]` to satisfy rule 1. Refresh the copy the same way when you upgrade the CLI, then run `python3 script/check_conventions.py --all`. Skill and CLI versions should match, since the skill documents the CLI's commands.
+
 ## File ownership
 
 | Owner | Files | On apply |
 | --- | --- | --- |
-| Template | `.claude/skills/ship/SKILL.md`, `.claude/skills/land/SKILL.md`, `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
-| Project | `CLAUDE.md`, `.claude/settings.json`, `.github/workflows/harness.yml`, `docs/README.md`, `docs/architecture.md`, `script/check.py` | Created if missing, otherwise `<file>.template` is written beside it |
+| Template | `.claude/skills/ship/SKILL.md`, `.claude/skills/land/SKILL.md`, `.claude/skills/playwright-cli/` (whole directory), `.claude/agents/code-reviewer.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.env.skills.example`, `docs/workflow.md`, `docs/setup.md`, `script/apply.py`, `script/check_conventions.py`, `script/github.py`, `script/test_harness.py` | Overwritten |
+| Project | `CLAUDE.md`, `.claude/settings.json`, `.github/workflows/harness.yml`, `.playwright/cli.config.json`, `docs/README.md`, `docs/architecture.md`, `script/check.py` | Created if missing, otherwise `<file>.template` is written beside it |
 | Shared | `.gitignore` | Missing harness entries are appended |
 | Generated | `.claude/harness-version` | Set to the template commit |
 

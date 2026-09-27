@@ -29,8 +29,18 @@ The permission allowlist in `.claude/settings.json` is a second safety net. Read
 - Acceptance criteria are agreed at the start of `/ship`. Each is tagged `runnable`, meaning a command proves it, or `judgment`.
 - Runnable criteria are executed, and their command and output are kept as evidence.
 - `/verify` runs only when the change touches a runnable app or UI.
+- A web UI change is also checked in a real browser with the `playwright-cli` skill. Claude snapshots and screenshots each agreed page and state at desktop and mobile widths, walks the changed flow, and checks the console for errors. The screenshot paths go to the reviewer as evidence.
 - One fresh-context `code-reviewer` agent judges the criteria and the code together. It returns `VERDICT: PASS | FAIL`.
 - `PASS` needs every criterion to pass and zero blocking findings. After two FAILs, the flow hands over to the human.
+
+## Browser checks
+
+The `playwright-cli` skill drives a real browser from the shell for UI and UX checks, scraping, and generating Playwright tests. It suits any repository with a web front end, not only crawlers.
+
+- Snapshots give element refs such as `e15` for later commands. Screenshots and traces are for humans and the reviewer.
+- Session output goes to `.playwright-cli/`, which is gitignored.
+- Local dev servers and test environments may be driven freely. On any other site, logging in or submitting data needs an explicit yes, under the Human in the loop rule.
+- The skill's own docs show `gh pr create --attach` for putting screenshots on a PR. That needs the `gh` CLI, which the harness does not require. Without it, list the screenshot paths in the PR's Verification section, and let the human attach any on GitHub.
 
 ## Branches
 
