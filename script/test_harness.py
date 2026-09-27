@@ -6,6 +6,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
+import json
 import subprocess
 import sys
 import tempfile
@@ -93,6 +96,51 @@ class IssueRecordTest(unittest.TestCase):
 
     def test_record_without_comments_has_no_comment_key(self):
         self.assertNotIn("comments", github.issue_record(self.ISSUE))
+
+
+class FakeClient:
+    """Stand-in for github.Client that serves canned pages for the issues listing."""
+
+    def __init__(self, pages):
+        self.pages = pages
+        self.calls = 0
+
+    def request(self, method, path, body=None):
+        self.calls += 1
+        return self.pages[self.calls - 1]
+
+
+class IssueListTest(unittest.TestCase):
+    """Behavior of github.cmd_issue_list and error exit codes in github.main."""
+
+    def args(self, limit):
+        return type("Args", (), {"limit": limit, "state": "open", "label": None, "assignee": None})()
+
+    def item(self, number, pr=False):
+        item = dict(IssueRecordTest.ISSUE, number=number)
+        if pr:
+            item["pull_request"] = {}
+        return item
+
+    def test_pages_past_pull_requests_until_limit(self):
+        first = [self.item(n, pr=True) for n in range(99)] + [self.item(1000)]
+        second = [self.item(1001), self.item(1002)]
+        client = FakeClient([first, second])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            github.cmd_issue_list(client, self.args(2))
+        self.assertEqual([i["number"] for i in json.loads(out.getvalue())], [1000, 1001])
+        self.assertEqual(client.calls, 2)
+
+    def test_limit_below_one_is_an_error(self):
+        with self.assertRaises(github.GitHubError):
+            github.cmd_issue_list(FakeClient([]), self.args(0))
+
+    def test_unreadable_body_file_exits_3(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = github.main(["issue-comment", "--number", "1", "--body-file", "/nonexistent/body.md"])
+        self.assertEqual(code, 3)
 
 
 class ParseDiffTest(unittest.TestCase):

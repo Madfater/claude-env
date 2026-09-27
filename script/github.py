@@ -8,7 +8,7 @@
   user's global git config is untouched.
 - Subcommands print JSON or plain text to stdout.
 - Exit codes: 0 success; 1 negative answer (CI failed, PR not merged); 2 CI still pending at
-  timeout; 3 error (missing credentials, API or git failure, unreadable input file).
+  timeout; 3 error (missing credentials, API or git failure, unreadable or malformed input).
 
 Usage:
     python3 script/github.py default-branch
@@ -573,7 +573,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         client = Client(load_env())
         args.func(client, args)
-    except (GitHubError, OSError) as exc:
+    except (GitHubError, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 3
     return 0

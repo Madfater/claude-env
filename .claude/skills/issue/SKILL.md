@@ -35,7 +35,7 @@ Read the body and every comment. Later comments often narrow or change the reque
 - `git log --oneline --all --grep "#<N>"`;
 - an open PR whose head branch is that branch.
 
-If a PR already exists, stop and report it. Continue only if the human says so.
+If a PR already exists, stop and report it. Continue only if the human says so. If a branch or worktree exists without a PR, the work was started earlier. Enter that worktree with `EnterWorktree` and its `path`, then go straight to step 5, which resumes at `/ship` gate 0.
 
 **Check:** you can state the problem in your own words, citing the comments that shaped it.
 
@@ -63,7 +63,7 @@ Build the input for `/ship` gate 1:
 - **Branch:** `<type>/<N>-<kebab-summary>`, for example `fix/42-keep-name-after-save`.
 - **Reproduction plan (bugs only):** how the bug will be shown before any fix. Use the cheapest faithful option:
   - a failing automated test at the right level, when the project has a test suite;
-  - for a web UI bug, the `playwright-cli` skill against the local dev server, with a snapshot or screenshot of the broken state;
+  - for a web UI bug, the `playwright-cli` skill against the local dev server, with a snapshot or screenshot of the broken state, named with a `-before` suffix so the after screenshot does not overwrite it;
   - otherwise a command whose output shows the wrong behavior.
 - **Acceptance criteria:**
   - For a bug, the reproduction as the first `runnable` criterion. It fails before the fix and passes after.
