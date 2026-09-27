@@ -17,16 +17,16 @@ Identify the branch and its PR. Use the argument if one was given, otherwise the
 
 ```bash
 git worktree list
-python3 script/github.py pr-merged [--number N]
+python3 script/github.py pr-merged --branch <branch>   # or --number N
 ```
 
 If the PR is not merged, stop and say so. Nothing is deleted for an unmerged PR.
 
-**Check:** `pr-merged` printed `true`.
+**Check:** `pr-merged` printed `true` and exited 0. Exit 1 means not merged, and exit 3 means an error to report.
 
 ## Step 2 - Find stale worktrees
 
-List every other worktree under `.claude/worktrees/`. For each one, run `python3 script/github.py pr-merged` from inside it. Collect the ones whose PR is merged, so they can be offered in the same confirmation.
+List every other worktree under `.claude/worktrees/`. For each one, run `python3 script/github.py pr-merged --branch <its branch>`. Collect the ones whose PR is merged, so they can be offered in the same confirmation.
 
 **Check:** each worktree is classified as merged, open or without a PR.
 

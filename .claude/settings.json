@@ -25,8 +25,8 @@
       "Bash(python3 script/github.py pr-merged:*)"
     ],
     "deny": [
-      "Read(./.env.skills)",
-      "Bash(cat .env.skills:*)"
+      "Read(**/.env.skills)",
+      "Edit(**/.env.skills)"
     ]
   }
 }

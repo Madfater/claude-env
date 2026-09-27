@@ -24,7 +24,7 @@ Resuming mid-flow is normal. Find where the repo is before doing anything:
 
 ```bash
 git worktree list && git status --short && git branch --show-current
-python3 script/github.py pr-view      # fails when no PR exists for the branch
+python3 script/github.py pr-view      # exits 3 with "No PR found" when the branch has none
 ```
 
 | What you see | Resume at |
@@ -133,9 +133,10 @@ If the push fails with a missing token, stop and point the human to `docs/setup.
 python3 script/github.py pr-checks --wait --timeout 900
 ```
 
-- `success` or `none`: report and continue.
-- `failure`: read the failing check, fix in gate 3, and review again in gate 5 if the fix changes behavior. Then ask the human before pushing again.
-- Timeout while pending: report and ask the human whether to keep waiting.
+- Exit 0, `success` or `none`: report and continue.
+- Exit 1, `failure`: read the failing check, fix in gate 3, and review again in gate 5 if the fix changes behavior. Then ask the human before pushing again.
+- Exit 2, still pending at timeout: report and ask the human whether to keep waiting.
+- Exit 3, error: report it, since the credentials or the API failed and CI state is unknown.
 
 **Check:** the checks are green or absent, and that is reported.
 
