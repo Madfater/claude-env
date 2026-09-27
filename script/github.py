@@ -6,17 +6,19 @@
 - Pushes and pulls pass the token to git through a one-shot credential helper that reads it
   from the child process environment, so the token never appears on a command line and the
   user's global git config is untouched.
-- Subcommands print JSON or plain text to stdout and exit non-zero on failure.
+- Subcommands print JSON or plain text to stdout.
+- Exit codes: 0 success; 1 negative answer (CI failed, PR not merged); 2 CI still pending at
+  timeout; 3 error (missing credentials, API or git failure).
 
 Usage:
     python3 script/github.py default-branch
     python3 script/github.py push
     python3 script/github.py sync --path <worktree>
     python3 script/github.py pr-create --title T --body-file F [--base B] [--draft]
-    python3 script/github.py pr-view [--number N]
+    python3 script/github.py pr-view [--number N | --branch B]
     python3 script/github.py pr-edit --number N --body-file F
-    python3 script/github.py pr-checks [--number N] [--wait] [--timeout 900]
-    python3 script/github.py pr-merged [--number N]
+    python3 script/github.py pr-checks [--number N | --branch B] [--wait] [--timeout 900]
+    python3 script/github.py pr-merged [--number N | --branch B]
     python3 script/github.py branch-delete --branch B
     python3 script/github.py repo-create --name N [--private] [--description D]
     python3 script/github.py repo-set-template [--off]
@@ -223,15 +225,16 @@ class Client:
             raise GitHubError("Detached HEAD. Check out a branch first.")
         return branch
 
-    def find_pr(self, number: int | None) -> dict:
-        """Return the PR by number, or the open PR whose head is the current branch."""
+    def find_pr(self, number: int | None, branch: str | None = None) -> dict:
+        """Return the PR by number, else the latest PR whose head is `branch` or the current branch."""
         if number:
             return self.request("GET", f"/repos/{{repo}}/pulls/{number}")
+        branch = branch or self.current_branch()
         owner = self.repo.split("/")[0]
-        head = urllib.parse.quote(f"{owner}:{self.current_branch()}")
+        head = urllib.parse.quote(f"{owner}:{branch}")
         prs = self.request("GET", f"/repos/{{repo}}/pulls?head={head}&state=all")
         if not prs:
-            raise GitHubError(f"No PR found for branch {self.current_branch()}.")
+            raise GitHubError(f"No PR found for branch {branch}.")
         return prs[0]
 
 
@@ -241,7 +244,8 @@ def local_default_branch() -> str | None:
         ref = run_git(["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"]).strip()
     except GitHubError:
         return None
-    return ref.rsplit("/", 1)[-1] if ref else None
+    prefix = "refs/remotes/origin/"
+    return ref[len(prefix):] if ref.startswith(prefix) else None
 
 
 def summarize_checks(runs: list[dict], statuses: list[dict]) -> dict:
@@ -317,7 +321,7 @@ def cmd_pr_create(client: Client, args) -> None:
 
 def cmd_pr_view(client: Client, args) -> None:
     """Print the key fields of a PR as JSON."""
-    pr = client.find_pr(args.number)
+    pr = client.find_pr(args.number, args.branch)
     print(json.dumps({
         "number": pr["number"],
         "url": pr["html_url"],
@@ -344,9 +348,9 @@ def cmd_pr_checks(client: Client, args) -> None:
 
     - With `--wait`, polls every 15 seconds until nothing is pending or `--timeout` elapses.
     - A `none` result is retried for the first 60 seconds, since CI can take a moment to register.
-    - Exits 0 on success or none, 1 on failure, 2 on timeout while pending.
+    - Exits 0 on success or none, 1 on CI failure, 2 on timeout while pending.
     """
-    pr = client.find_pr(args.number)
+    pr = client.find_pr(args.number, args.branch)
     sha = pr["head"]["sha"]
     deadline = time.monotonic() + args.timeout
     grace_end = time.monotonic() + 60
@@ -368,7 +372,7 @@ def cmd_pr_checks(client: Client, args) -> None:
 
 def cmd_pr_merged(client: Client, args) -> None:
     """Print `true` or `false`; exit 1 when the PR is not merged."""
-    pr = client.find_pr(args.number)
+    pr = client.find_pr(args.number, args.branch)
     merged = bool(pr.get("merged_at"))
     print("true" if merged else "false")
     if not merged:
@@ -426,6 +430,7 @@ def build_parser() -> argparse.ArgumentParser:
     for name, func in (("pr-view", cmd_pr_view), ("pr-merged", cmd_pr_merged)):
         p = sub.add_parser(name)
         p.add_argument("--number", type=int)
+        p.add_argument("--branch")
         p.set_defaults(func=func)
 
     p = sub.add_parser("pr-edit")
@@ -435,6 +440,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("pr-checks")
     p.add_argument("--number", type=int)
+    p.add_argument("--branch")
     p.add_argument("--wait", action="store_true")
     p.add_argument("--timeout", type=int, default=900)
     p.set_defaults(func=cmd_pr_checks)
@@ -464,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
         args.func(client, args)
     except GitHubError as exc:
         print(f"error: {exc}", file=sys.stderr)
-        return 1
+        return 3
     return 0
 
 

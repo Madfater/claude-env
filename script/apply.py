@@ -8,6 +8,7 @@
 - Files whose content already matches are left alone.
 - Prints the plan and asks for confirmation before writing (human in the loop).
   `--dry-run` prints the plan only; `--yes` skips the prompt after a human approved the plan.
+- Without a terminal and without `--yes`, the prompt reads end of input and aborts.
 
 Usage:
     python3 script/apply.py <target-repo> --dry-run
@@ -181,8 +182,14 @@ def main(argv: list[str] | None = None) -> int:
     print(render(actions))
     if args.dry_run:
         return 0
+    if all(a.kind == "skip" for a in actions):
+        print("nothing to do.")
+        return 0
     if not args.yes:
-        answer = input("Apply these changes? [y/N] ").strip().lower()
+        try:
+            answer = input("Apply these changes? [y/N] ").strip().lower()
+        except EOFError:
+            answer = ""
         if answer not in {"y", "yes"}:
             print("aborted")
             return 1

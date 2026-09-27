@@ -82,6 +82,10 @@ class ParseDiffTest(unittest.TestCase):
         )
         self.assertEqual(cc.parse_diff(diff), {"x.py": [(2, "one"), (3, "two")]})
 
+    def test_added_line_that_looks_like_header(self):
+        diff = "diff --git a/x.md b/x.md\n--- a/x.md\n+++ b/x.md\n@@ -0,0 +1,2 @@\n+++ b\n+after\n"
+        self.assertEqual(cc.parse_diff(diff), {"x.md": [(1, "++ b"), (2, "after")]})
+
 
 class LineChecksTest(unittest.TestCase):
     """Behavior of check_conventions.check_lines."""

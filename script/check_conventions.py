@@ -85,24 +85,32 @@ def git(args: list[str]) -> str:
 def parse_diff(diff: str) -> dict[str, list[tuple[int, str]]]:
     """Map each file in a unified diff (`-U0`) to its added lines as (line number, text).
 
-    - Tracks the `+++ b/<path>` header and each `@@ ... +start,count @@` hunk header.
+    - A `diff --git` line starts a file header; `+++ b/<path>` is read only inside that header,
+      so an added line whose content starts with `++ ` is not mistaken for a header.
+    - Each `@@ ... +start,count @@` hunk header ends the file header and sets the line counter.
     - Deleted files (`+++ /dev/null`) are skipped.
     """
     added: dict[str, list[tuple[int, str]]] = {}
     current: str | None = None
+    in_header = False
     line_no = 0
     for raw in diff.splitlines():
-        if raw.startswith("+++ "):
+        if raw.startswith("diff --git "):
+            in_header = True
+            current = None
+            continue
+        if in_header and raw.startswith("+++ "):
             target = raw[4:]
             current = None if target == "/dev/null" else target[2:] if target.startswith("b/") else target
             if current is not None:
                 added.setdefault(current, [])
             continue
         if raw.startswith("@@"):
+            in_header = False
             match = re.search(r"\+(\d+)", raw)
             line_no = int(match.group(1)) if match else 0
             continue
-        if current is None:
+        if current is None or in_header:
             continue
         if raw.startswith("+"):
             added[current].append((line_no, raw[1:]))
