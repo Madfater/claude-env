@@ -71,6 +71,30 @@ class SummarizeChecksTest(unittest.TestCase):
         self.assertEqual(github.summarize_checks(runs, [])["overall"], "success")
 
 
+class IssueRecordTest(unittest.TestCase):
+    """Behavior of github.only_issues and github.issue_record."""
+
+    ISSUE = {
+        "number": 7, "title": "Crash on save", "state": "open", "user": {"login": "amy"},
+        "labels": [{"name": "bug"}], "assignees": [{"login": "bo"}],
+        "html_url": "https://github.com/o/r/issues/7", "body": None,
+    }
+
+    def test_only_issues_drops_pull_requests(self):
+        items = [self.ISSUE, {**self.ISSUE, "number": 8, "pull_request": {}}]
+        self.assertEqual([i["number"] for i in github.only_issues(items)], [7])
+
+    def test_record_fields_and_comments(self):
+        record = github.issue_record(self.ISSUE, [{"user": None, "created_at": "t", "body": "hi"}])
+        self.assertEqual(record["labels"], ["bug"])
+        self.assertEqual(record["assignees"], ["bo"])
+        self.assertEqual(record["body"], "")
+        self.assertEqual(record["comments"], [{"author": None, "created_at": "t", "body": "hi"}])
+
+    def test_record_without_comments_has_no_comment_key(self):
+        self.assertNotIn("comments", github.issue_record(self.ISSUE))
+
+
 class ParseDiffTest(unittest.TestCase):
     """Behavior of check_conventions.parse_diff."""
 

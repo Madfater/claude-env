@@ -20,6 +20,9 @@ Usage:
     python3 script/github.py pr-checks [--number N | --branch B] [--wait] [--timeout 900]
     python3 script/github.py pr-merged [--number N | --branch B]
     python3 script/github.py branch-delete --branch B
+    python3 script/github.py issue-list [--label L] [--assignee A] [--state open] [--limit 30]
+    python3 script/github.py issue-view --number N
+    python3 script/github.py issue-comment --number N --body-file F
     python3 script/github.py repo-create --name N [--private] [--description D]
     python3 script/github.py repo-set-template [--off]
 """
@@ -248,6 +251,42 @@ def local_default_branch() -> str | None:
     return ref[len(prefix):] if ref.startswith(prefix) else None
 
 
+def only_issues(items: list[dict]) -> list[dict]:
+    """Drop pull requests from an issues listing.
+
+    - The issues endpoints also return PRs; those carry a `pull_request` key.
+    """
+    return [item for item in items if "pull_request" not in item]
+
+
+def issue_record(issue: dict, comments: list[dict] | None = None) -> dict:
+    """Reduce an issue and its comments to the fields the skills use.
+
+    - Keeps number, title, state, author, labels, assignees, body and URL.
+    - Comments keep author, date and body, oldest first.
+    """
+    record = {
+        "number": issue["number"],
+        "title": issue["title"],
+        "state": issue["state"],
+        "author": (issue.get("user") or {}).get("login"),
+        "labels": [label["name"] for label in issue.get("labels", [])],
+        "assignees": [user["login"] for user in issue.get("assignees", [])],
+        "url": issue["html_url"],
+        "body": issue.get("body") or "",
+    }
+    if comments is not None:
+        record["comments"] = [
+            {
+                "author": (c.get("user") or {}).get("login"),
+                "created_at": c.get("created_at"),
+                "body": c.get("body") or "",
+            }
+            for c in comments
+        ]
+    return record
+
+
 def summarize_checks(runs: list[dict], statuses: list[dict]) -> dict:
     """Combine check runs and commit statuses into one verdict.
 
@@ -408,6 +447,43 @@ def cmd_repo_set_template(client: Client, args) -> None:
     print(json.dumps({"full_name": repo["full_name"], "is_template": repo.get("is_template")}))
 
 
+def cmd_issue_list(client: Client, args) -> None:
+    """Print matching issues, without bodies, as a JSON list."""
+    query = {"state": args.state, "per_page": str(min(args.limit, 100))}
+    if args.label:
+        query["labels"] = args.label
+    if args.assignee:
+        query["assignee"] = args.assignee
+    items = client.request("GET", "/repos/{repo}/issues?" + urllib.parse.urlencode(query))
+    issues = [issue_record(i) for i in only_issues(items)][: args.limit]
+    for issue in issues:
+        issue.pop("body")
+    print(json.dumps(issues, indent=2))
+
+
+def cmd_issue_view(client: Client, args) -> None:
+    """Print one issue with all its comments as JSON; fail when the number is a PR."""
+    issue = client.request("GET", f"/repos/{{repo}}/issues/{args.number}")
+    if "pull_request" in issue:
+        raise GitHubError(f"#{args.number} is a pull request, not an issue.")
+    comments: list[dict] = []
+    page = 1
+    while True:
+        batch = client.request("GET", f"/repos/{{repo}}/issues/{args.number}/comments?per_page=100&page={page}")
+        comments.extend(batch)
+        if len(batch) < 100:
+            break
+        page += 1
+    print(json.dumps(issue_record(issue, comments), indent=2))
+
+
+def cmd_issue_comment(client: Client, args) -> None:
+    """Post the contents of `--body-file` as a comment on an issue."""
+    body = Path(args.body_file).read_text(encoding="utf-8")
+    comment = client.request("POST", f"/repos/{{repo}}/issues/{args.number}/comments", {"body": body})
+    print(json.dumps({"url": comment["html_url"]}))
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Define the subcommands and their arguments."""
     parser = argparse.ArgumentParser(description="GitHub client for the harness skills.")
@@ -444,6 +520,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--wait", action="store_true")
     p.add_argument("--timeout", type=int, default=900)
     p.set_defaults(func=cmd_pr_checks)
+
+    p = sub.add_parser("issue-list")
+    p.add_argument("--label")
+    p.add_argument("--assignee")
+    p.add_argument("--state", choices=["open", "closed", "all"], default="open")
+    p.add_argument("--limit", type=int, default=30)
+    p.set_defaults(func=cmd_issue_list)
+
+    p = sub.add_parser("issue-view")
+    p.add_argument("--number", type=int, required=True)
+    p.set_defaults(func=cmd_issue_view)
+
+    p = sub.add_parser("issue-comment")
+    p.add_argument("--number", type=int, required=True)
+    p.add_argument("--body-file", required=True)
+    p.set_defaults(func=cmd_issue_comment)
 
     p = sub.add_parser("branch-delete")
     p.add_argument("--branch", required=True)

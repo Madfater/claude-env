@@ -29,6 +29,7 @@ TEMPLATE_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_OWNED = [
     ".claude/skills/ship/SKILL.md",
     ".claude/skills/land/SKILL.md",
+    ".claude/skills/issue/SKILL.md",
     ".claude/skills/playwright-cli/",
     ".claude/agents/code-reviewer.md",
     ".github/PULL_REQUEST_TEMPLATE.md",
